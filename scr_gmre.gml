@@ -173,6 +173,11 @@ function gmre(expr = "", simplified = false) constructor {
 					if result == -1 return -1;
 					pos = result;
 					break;
+				case e_gmre_rule.STRING:
+					var result = _check_string(r, pos);
+					if result == -1 return -1;
+					pos = result;
+					break;
 			}
 		}
 		
@@ -207,6 +212,32 @@ function gmre(expr = "", simplified = false) constructor {
 		}
 		
 		return false;
+	}
+	
+	static _check_string = function(r, pos) {
+		
+		var l = array_length(r.str);
+		var rep = 0;
+		while(_str_in_str(r, pos) xor r.negated) {
+			rep++;
+			pos += l;
+			if pos >= str_len or rep >= r.rmax break;
+		}
+		
+		if rep >= r.rmin return pos;
+		return -1;
+	}
+	
+	static _str_in_str = function(r, pos) {
+		
+		var l = array_length(r.str);
+		if l == 0 or pos >= str_len return false;
+		
+		for(var i = 0; i < l; i++) {
+			if pos + i >= str_len return false;
+			if str_arr[pos+i] != r.str[i] return false;
+		}
+		return true;
 	}
 	
 	static _generate_rules = function() {
