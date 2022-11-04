@@ -1,6 +1,41 @@
 enum e_gmre_rule { CHARSET, STRING, LOOP }
 
-function gmre(expr = "", simplified = false) constructor {
+#region FN
+function gmre_match(ex, str) {
+	return ex.match(str);
+}
+
+function gmre_find(ex, str, substr) {
+	return ex.find(str, substr);
+}
+
+function gmre_find_all(ex, str, substr) {
+	return ex.find_all(str, substr);
+}
+
+function gmre_find_pos(ex, str, substr) {
+	return ex.find_pos(str, substr);
+}
+
+function gmre_find_pos_all(ex, str, substr) {
+	return ex.find_pos_all(str, substr);
+}
+
+function gmre_replace(ex, str, substr) {
+	return ex.replace(str, substr);
+}
+
+function gmre_replace_all(ex, str, substr_or_array) {
+	return ex.replace_all(str, substr_or_array);
+}
+
+function gmre_contains(ex, str, substr) {
+	return ex.find_pos(str, substr) != 0;
+}
+#endregion
+
+#region EXPR CODE
+function expression(expr = "", simplified = false) constructor {
 	
 	rules = [];
 	exp_arr = [];
@@ -11,9 +46,12 @@ function gmre(expr = "", simplified = false) constructor {
 	err = "";
 	current_rule = 0;
 	
-	if expr != "" expression(expr, simplified);
+	if expr != "" parse(expr, simplified);
 	
-	static expression = function(expr, simplified = false) {
+	static parse = function(expr, simplified = false) {
+		
+		if simplified expr = _unsimplify(expr);
+		else expr = _escape(expr);
 		
 		err = "";
 		ok = true;
@@ -21,14 +59,32 @@ function gmre(expr = "", simplified = false) constructor {
 		exp_len = string_length(expr);
 		exp_arr = array_create(exp_len);
 		
-		expr = _escape(expr);
-		
-		for(var i = 0; i < exp_len; i++) 
-			exp_arr[i] = string_char_at(expr, i+1);
+		for(var i = 0; i < exp_len; i++) exp_arr[i] = string_char_at(expr, i+1);
 			
 		if !_generate_rules() return false;
 		
 		return true;
+	}
+	
+	static _unsimplify = function(expr) {
+		
+		newexpr = "";
+		collector = "";
+		var l = string_length(expr);
+		for(var i = 1; i <= l; i++) {
+			var ch = string_char_at(expr, i);
+			if ch == "*" {
+				if collector != "" newexpr += collector + "|";
+				collector = "";
+				newexpr += "![]?";
+			}
+			else {
+				if collector == "" collector = "|"
+				collector += ch;
+			}
+		}
+		if collector != "" newexpr += collector + "|";
+		return newexpr;
 	}
 	
 	static match = function(str) {
@@ -156,7 +212,7 @@ function gmre(expr = "", simplified = false) constructor {
 			var sub = is_arr ? substr_or_array[min(arrlen, ai++)] : substr_or_array;
 			str = string_insert(sub, string_delete(str, from+1 + offset, to-from), from+1 + offset);
 			from = to-1;
-			offset += string_length(sub)-1;
+			offset += string_length(sub)-1 - (to-from);
 		}
 		
 		return str;
@@ -165,16 +221,19 @@ function gmre(expr = "", simplified = false) constructor {
 	static _apply_rules = function(pos) {
 		
 		var rlen = array_length(rules);
-		for(current_rule = 0; current_rule < rlen and pos < str_len; current_rule++) {
+		for(current_rule = 0; current_rule < rlen; current_rule++) {
+			
 			var r = rules[current_rule];
+			var rn = current_rule+1 < rlen ? rules[current_rule+1] : undefined;
+			
 			switch(r.type) {
 				case e_gmre_rule.CHARSET:
-					var result = _check_charset(r, pos);
+					var result = _check_charset(r, pos, rn);
 					if result == -1 return -1;
 					pos = result;
 					break;
 				case e_gmre_rule.STRING:
-					var result = _check_string(r, pos);
+					var result = _check_string(r, pos, rn);
 					if result == -1 return -1;
 					pos = result;
 					break;
@@ -184,18 +243,36 @@ function gmre(expr = "", simplified = false) constructor {
 		return current_rule == rlen ? pos : -1;
 	}
 	
-	static _check_charset = function(r, pos) {
+	static _skip_inf = function(r, pos, rn) {
+		if r.rmax == infinity and rn != undefined and pos < str_len {
+			switch(rn.type) {
+				case e_gmre_rule.CHARSET:
+					if _check_charset(rn, pos, undefined) != -1 return true;
+					break;
+				case e_gmre_rule.STRING:
+					if _check_string(rn, pos, undefined) != -1 return true;
+					break;
+			}
+		}
+		return false;
+	}
+	
+	static _check_charset = function(r, pos, rn) {
 		
-		var ch = str_arr[pos];
 		var rep = 0;
-		while(_ch_in_charset(r, ch) xor r.negated) {
-			rep++;
-			if ++pos >= str_len or rep >= r.rmax break;
-			ch = str_arr[pos];
+		if pos >= str_len and r.rmin == 0 return pos;
+		
+		if !_skip_inf(r, pos, rn) and pos < str_len {
+			var ch = str_arr[pos];
+			while(_ch_in_charset(r, ch) xor r.negated) {
+				rep++;
+				pos++;
+				if pos >= str_len or rep >= r.rmax or _skip_inf(r, pos, rn) break;
+				ch = str_arr[pos];
+			}
 		}
 		
-		if rep >= r.rmin return pos;
-		return -1;
+		return rep >= r.rmin ? pos : -1;
 	}
 	
 	static _ch_in_charset = function(r, ch) {
@@ -214,24 +291,27 @@ function gmre(expr = "", simplified = false) constructor {
 		return false;
 	}
 	
-	static _check_string = function(r, pos) {
+	static _check_string = function(r, pos, rn) {
 		
 		var l = array_length(r.str);
+		if pos >= str_len and r.rmin == 0 return pos;
+		if l == 0 return pos;
+		
 		var rep = 0;
-		while(_str_in_str(r, pos) xor r.negated) {
-			rep++;
-			pos += l;
-			if pos >= str_len or rep >= r.rmax break;
+		if !_skip_inf(r, pos, rn) and pos < str_len {
+			while(_str_in_str(r, pos) xor r.negated) {
+				rep++;
+				pos += l;
+				if pos >= str_len or rep >= r.rmax or _skip_inf(r, pos, rn) break;
+			}
 		}
 		
-		if rep >= r.rmin return pos;
-		return -1;
+		return rep >= r.rmin ? pos : -1;
 	}
 	
 	static _str_in_str = function(r, pos) {
 		
 		var l = array_length(r.str);
-		if l == 0 or pos >= str_len return false;
 		
 		for(var i = 0; i < l; i++) {
 			if pos + i >= str_len return false;
@@ -426,7 +506,9 @@ function gmre(expr = "", simplified = false) constructor {
 		return str;
 	}
 }
+#endregion
 
+#region RULE CODE
 function _gmre_rule_(t, n) constructor {
 	
 	type = t
@@ -519,5 +601,4 @@ function _gmre_rule_(t, n) constructor {
 		return str;
 	}
 }
-
-
+#endregion
