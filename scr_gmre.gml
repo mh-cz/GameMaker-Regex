@@ -73,10 +73,14 @@ function expression(expr = "", simplified = false) constructor {
 		var l = string_length(expr);
 		for(var i = 1; i <= l; i++) {
 			var ch = string_char_at(expr, i);
-			if ch == "*" {
+
+			if ch == "*" and string_char_at(expr, i-1) != "\\" {
 				if collector != "" newexpr += collector + "|";
 				collector = "";
-				newexpr += "![]?";
+				newexpr += "![]>";
+			}
+			else if ch == "\\" and string_char_at(expr, i+1) == "*" {
+				continue;
 			}
 			else {
 				if collector == "" collector = "|"
@@ -434,29 +438,43 @@ function expression(expr = "", simplified = false) constructor {
 			
 			var ch = exp_arr[ri];
 			
-			if _is_number(ch) {
-				valid = true;
-				if first mn += ch;
-				else mx += ch;
+			if first {
+				if _is_number(ch) {
+					valid = true;
+					mn += ch;
+				}
+				else if ch == ">" {
+					valid = true;
+					mn = ch;
+					break;
+				}
+				else if ch == "-" {
+					valid = false;
+					if mn = "" break;
+					first = false;
+				}
+				else break;
 			}
-			else if ch == "?" {
-				valid = true;
-				if first mn = ch;
-				else mx = ch;
+			else {
+				if _is_number(ch) {
+					valid = true;
+					mx += ch;
+				}
+				else if ch == ">" {
+					valid = true;
+					mx = ch;
+					break;
+				}
+				else break;
 			}
-			else if ch == "-" {
-				valid = false;
-				first = false;
-			}
-			else break;
 			
 			ri++;
 		}
 		
 		if !valid return ri + 0.5;
 		
-		if mn == "?" {
-			r.rmin = 0;
+		if mn == ">" {
+			r.rmin = 1;
 			r.rmax = infinity;
 		}
 		else if mn != "" {
@@ -464,7 +482,7 @@ function expression(expr = "", simplified = false) constructor {
 			r.rmax = r.rmin;
 		}
 
-		if mx == "?" {
+		if mx == ">" {
 			r.rmax = infinity;
 		}
 		else if mx != "" {
