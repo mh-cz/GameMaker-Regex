@@ -1,4 +1,4 @@
-enum e_gmre_rule { CHARSET, STRING, LOOP }
+enum e_gmre_rule { CHARSET, STRING, LOOP, CUSTOM_POS }
 
 #region FN
 function gmre_match(ex, str) {
@@ -36,6 +36,8 @@ function gmre_contains(ex, str, substr) {
 
 #region EXPR CODE
 function expression(expr = "", simple = false) constructor {
+	
+	#region INPUT
 	
 	rules = [];
 	exp_arr = [];
@@ -220,14 +222,17 @@ function expression(expr = "", simple = false) constructor {
 		
 		return str;
 	}
+	#endregion
 	
 	static _apply_rules = function(rls, pos) {
 		
 		var rlen = array_length(rls);
-		for(var i = 0; i < rlen; i++) {
+		var i = 0;
+		for(; i < rlen; i++) {
 			
 			var r = rls[i];
 			var rn = i+1 < rlen ? rls[i+1] : undefined;
+			var prev_pos = pos;
 			
 			switch(r.type) {
 				case e_gmre_rule.CHARSET:
@@ -242,9 +247,35 @@ function expression(expr = "", simple = false) constructor {
 			}
 			
 			if pos == -1 return -1;
+			//if !_check_custom_pos(r, prev_pos, pos) return -1;
 		}
 		
 		return i == rlen ? pos : -1;
+	}
+	
+	static _check_custom_pos = function(r, from, to) {
+		
+		var len = array_length(r.custom_pos);
+		var len2 = array_length(r.custom_pos_eq);
+		
+		for(var pos = from; pos <= to; pos++) {
+			for(var i = 0; i < len; i++) {
+				var cp = r.custom_pos[i];
+				var cplen = array_length(cp);
+				switch(cp[cplen-1]) {
+					case 0:
+						break;
+					case 1:
+						break;
+					case 2:
+						break;
+					case 3:
+						break;
+				}
+			}
+		}
+		
+		return true;
 	}
 	
 	static _check_loop = function(r, pos, rn) {
@@ -254,14 +285,13 @@ function expression(expr = "", simple = false) constructor {
 		if l == 0 return pos;
 		
 		var rep = 0;
-		
-		pos = _apply_rules(r.rules, pos);
-		while(pos != -1 xor r.negated) {
+		var p = _apply_rules(r.rules, pos);
+		while(p != -1 xor r.negated) {
 			rep++;
+			pos = p;
 			if pos >= str_len or rep >= r.rmax break;
-			pos = _apply_rules(r.rules, pos);
+			p = _apply_rules(r.rules, pos);
 		}
-		
 		return rep >= r.rmin ? pos : -1;
 	}
 	
@@ -349,6 +379,7 @@ function expression(expr = "", simple = false) constructor {
 		
 		var loop = undefined;
 		var loop_start = 0;
+		var last_rule = undefined;
 		
 		for(var i = 0; i < exp_len; i++) {
 			var ch = exp_arr[i];
@@ -367,18 +398,13 @@ function expression(expr = "", simple = false) constructor {
 					while(ri < exp_len) {
 						ch = exp_arr[ri];
 						chp = exp_arr[ri-1];
-						chpp = ri > 1 ? exp_arr[ri-2] : "";
-						
 						ri++;
-						
 						if ch == "]" and chp != "\\" {
 							closed = true;
 							break;	
 						}
-						
 						array_push(r.str, ch);
 					}
-					
 					if !closed return _error("UNCLOSED CHARSET AT: " + string(i+1), i+1);
 					
 					ri = _get_repeats(r, ri);
@@ -386,6 +412,35 @@ function expression(expr = "", simple = false) constructor {
 					
 					r._process_charset();
 					array_push(loop == undefined ? rules : loop.rules, r);
+					last_rule = r;
+					i = ri - 1;
+					
+					break;
+				#endregion
+				
+				#region CUSTOM POS
+				case "{":
+					if chp == "\\" break;
+					if last_rule == undefined return _error("NO RULE TO ATTACH CUSTOM POS RULE TO: " + string(i+1), i+1);
+					
+					var r = new _gmre_rule_(e_gmre_rule.CUSTOM_POS, chp == "!");
+					var closed = false;
+					var ri = i+1;
+					
+					while(ri < exp_len) {
+						ch = exp_arr[ri];
+						chp = exp_arr[ri-1];
+						ri++;
+						if ch == "}" and chp != "\\" {
+							closed = true;
+							break;	
+						}
+						array_push(r.str, ch);
+					}
+					if !closed return _error("UNCLOSED CUSTOM POS AT: " + string(i+1), i+1);
+					if !r._process_custom_pos() return _error("CUSTOM POS SYNTAX ERROR");
+					
+					array_push(last_rule.custom_pos, r);
 					i = ri - 1;
 					
 					break;
@@ -402,17 +457,13 @@ function expression(expr = "", simple = false) constructor {
 					while(ri < exp_len) {
 						ch = exp_arr[ri];
 						chp = exp_arr[ri-1];
-						
 						ri++;
-						
 						if ch == "|" and chp != "\\" {
 							closed = true;
 							break;	
 						}
-						
 						array_push(r.str, ch);
 					}
-					
 					if !closed return _error("UNCLOSED STRING AT: " + string(i+1), i+1);
 					
 					ri = _get_repeats(r, ri);
@@ -420,6 +471,7 @@ function expression(expr = "", simple = false) constructor {
 					
 					r._process_string();
 					array_push(loop == undefined ? rules : loop.rules, r);
+					last_rule = r;
 					i = ri - 1;
 					
 					break;
@@ -440,6 +492,7 @@ function expression(expr = "", simple = false) constructor {
 					if floor(ri) != ri return _error("REPEAT SYNTAX ERROR AT: " + string(floor(ri)+1), floor(ri)+1);
 					
 					array_push(rules, loop);
+					last_rule = loop;
 					loop = undefined;
 					i = ri - 1;
 					
@@ -562,6 +615,8 @@ function _gmre_rule_(t, n) constructor {
 	rules = [];
 	charset = [];
 	str = [];
+	custom_pos = [];
+	custom_pos_eq = [];
 	
 	static _process_string = function() {
 		
@@ -570,6 +625,132 @@ function _gmre_rule_(t, n) constructor {
 		str = array_create(l);
 		for(var i = 0; i < l; i++)
 			str[i] = string_char_at(s, i+1);
+	}
+	
+	static _process_custom_pos = function() {
+		
+		_process_string();
+		
+		var c = "";
+		var t = -1; // 0:x, 1:n+-x, 2:[]+-x, 3:||+-x
+		var a = [];
+		var eq = false;
+		
+		var len = array_length(str);
+		for(var i = 0; i < len; i++) {
+			var ch = str[i];
+			var chp = (i != 0 ? str[i-1] : "");
+			
+			if _is_number(ch) {
+				t = 0;
+				c += ch;
+			}
+			else switch(ch) {
+				case "n":
+					if eq break;
+					t = 1;
+					array_push(a, "n");
+					break;
+			
+				case "+":
+				case "-":
+					if eq break;
+					array_push(a, ch);
+					c = "";
+					break;
+				
+				case ">":
+					if eq break;
+					if c != "" array_push(a, real(c));
+					array_push(a, t + 0.1);
+					array_push(custom_pos, a);
+					t = -1;
+					a = [];
+					c = "";
+					break;
+				
+				case "[":
+					if chp == "\\" break;
+					t = 2;
+					
+					var r = new _gmre_rule_(e_gmre_rule.CHARSET, chp == "!");
+					var closed = false;
+					var ri = i+1;
+					
+					while(ri < len) {
+						ch = str[ri];
+						chp = str[ri-1];
+						ri++;
+						if ch == "]" and chp != "\\" {
+							closed = true;
+							break;	
+						}	
+						array_push(r.str, ch);
+					}					
+					if !closed return false;
+					
+					ri = _get_repeats(r, ri, len);
+					if floor(ri) != ri return false;
+					
+					array_push(a, r);
+					i = ri - 1;
+					
+					break;
+				
+				case "|":
+					if chp == "\\" break;
+					t = 3;
+					
+					var r = new _gmre_rule_(e_gmre_rule.STRING, chp == "!");
+					var closed = false;
+					var ri = i+1;
+					
+					while(ri < len) {
+						ch = str[ri];
+						chp = str[ri-1];
+						ri++;
+						if ch == "|" and chp != "\\" {
+							closed = true;
+							break;	
+						}
+						array_push(r.str, ch);
+					}
+					if !closed return false;
+					
+					ri = _get_repeats(r, ri, len);
+					if floor(ri) != ri return false;						
+					
+					array_push(a, r);
+					i = ri - 1;
+					
+					break;
+					
+				case "=":
+					if eq break;
+					if c != ""  array_push(a, real(c));
+					array_push(a, t);
+					array_push(custom_pos, a);
+					t = -1;
+					a = [];
+					c = "";
+					eq = true;
+					break;
+					
+				case ",":
+					if c != "" and !eq array_push(a, real(c));
+					array_push(a, t);
+					array_push(eq ? custom_pos_eq : custom_pos, a);
+					t = -1;
+					a = [];
+					c = "";
+					break;
+			}
+		}
+		
+		array_push(a, t);
+		array_push(custom_pos_eq, a);
+		
+		return true;
 	}
 	
 	static _process_charset = function() {
@@ -643,6 +824,71 @@ function _gmre_rule_(t, n) constructor {
 		str = string_replace_all(str, "°¹", ")");
 		str = string_replace_all(str, "°²", "]");
 		return str;
+	}
+	
+	static _get_repeats = function(r, ri, exp_len) {
+		
+		var valid = true;
+		var first = true;
+		var mn = "";
+		var mx = "";
+		
+		while(ri < exp_len) {
+			
+			var ch = str[ri];
+			
+			if first {
+				if _is_number(ch) {
+					valid = true;
+					mn += ch;
+				}
+				else if ch == ">" {
+					valid = true;
+					mn = ch;
+					break;
+				}
+				else if ch == "-" {
+					valid = false;
+					if mn = "" break;
+					first = false;
+				}
+				else break;
+			}
+			else {
+				if _is_number(ch) {
+					valid = true;
+					mx += ch;
+				}
+				else if ch == ">" {
+					valid = true;
+					mx = ch;
+					break;
+				}
+				else break;
+			}
+			
+			ri++;
+		}
+		
+		if !valid return ri + 0.5;
+		
+		if mn == ">" {
+			r.rmin = 1;
+			r.rmax = infinity;
+		}
+		else if mn != "" {
+			r.rmin = real(mn);
+			r.rmax = r.rmin;
+		}
+
+		if mx == ">" {
+			r.rmax = infinity;
+		}
+		else if mx != "" {
+			r.rmax = real(mx);
+		}
+		
+		return ri;
 	}
 }
 #endregion
