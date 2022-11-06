@@ -100,7 +100,7 @@ function expression(expr = "", simple = false) constructor {
 		str_arr = array_create(str_len);
 		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
 		
-		return _apply_rules(rules, 0) == str_len ? true : false;
+		return _apply_rules(rules, 0, str_len) == str_len ? true : false;
 	}
 	
 	static find = function(str) {
@@ -111,10 +111,10 @@ function expression(expr = "", simple = false) constructor {
 		str_arr = array_create(str_len);
 		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
 		
-		for(from = 0; from < str_len; from++) {
-			var to = _apply_rules(rules, from);
+		for(pos = 0; pos < str_len; pos++) {
+			var to = _apply_rules(rules, pos, str_len);
 			if to == -1 continue;
-			return string_copy(str, from+1, to-from);
+			return string_copy(str, pos+1, to-pos);
 		}
 		
 		return "";
@@ -129,11 +129,11 @@ function expression(expr = "", simple = false) constructor {
 		str_arr = array_create(str_len);
 		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
 		
-		for(from = 0; from < str_len; from++) {
-			var to = _apply_rules(rules, from);
+		for(pos = 0; pos < str_len; pos++) {
+			var to = _apply_rules(rules, pos, str_len);
 			if to == -1 continue;
-			array_push(arr, string_copy(str, from+1, to-from));
-			from = to-1;
+			array_push(arr, string_copy(str, pos+1, to-pos));
+			pos = to-1;
 		}
 		
 		return arr;
@@ -147,10 +147,10 @@ function expression(expr = "", simple = false) constructor {
 		str_arr = array_create(str_len);
 		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
 		
-		for(from = 0; from < str_len; from++) {
-			var to = _apply_rules(rules, from);
+		for(pos = 0; pos < str_len; pos++) {
+			var to = _apply_rules(rules, pos, str_len);
 			if to == -1 continue;
-			return from+1;
+			return pos+1;
 		}
 		
 		return "";
@@ -165,11 +165,11 @@ function expression(expr = "", simple = false) constructor {
 		str_arr = array_create(str_len);
 		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
 		
-		for(from = 0; from < str_len; from++) {
-			var to = _apply_rules(rules, from);
+		for(pos = 0; pos < str_len; pos++) {
+			var to = _apply_rules(rules, pos, str_len);
 			if to == -1 continue;
-			array_push(arr, from+1);
-			from = to-1;
+			array_push(arr, pos+1);
+			pos = to-1;
 		}
 		
 		return arr;
@@ -184,10 +184,10 @@ function expression(expr = "", simple = false) constructor {
 		str_arr = array_create(str_len);
 		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
 		
-		for(from = 0; from < str_len; from++) {
-			var to = _apply_rules(rules, from);
+		for(pos = 0; pos < str_len; pos++) {
+			var to = _apply_rules(rules, pos, str_len);
 			if to == -1 continue;
-			return string_insert(substr, string_delete(str, from+1, to-from), from+1);
+			return string_insert(substr, string_delete(str, pos+1, to-pos), pos+1);
 		}
 		
 		return str;
@@ -210,121 +210,128 @@ function expression(expr = "", simple = false) constructor {
 		str_arr = array_create(str_len);
 		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
 		
-		for(from = 0; from < str_len; from++) {
-			var to = _apply_rules(rules, from);
+		for(pos = 0; pos < str_len; pos++) {
+			var to = _apply_rules(rules, pos, str_len);
 			if to == -1 continue;
 			
 			var sub = is_arr ? substr_or_array[min(arrlen, ai++)] : substr_or_array;
-			str = string_insert(sub, string_delete(str, from+1 + offset, to-from), from+1 + offset);
-			from = to-1;
-			offset += string_length(sub)-1 - (to-from);
+			str = string_insert(sub, string_delete(str, pos+1 + offset, to-pos), pos+1 + offset);
+			pos = to-1;
+			offset += string_length(sub)-1 - (to-pos);
 		}
 		
 		return str;
 	}
 	#endregion
 	
-	static _apply_rules = function(rls, pos) {
+	static _apply_rules = function(rls, pos, to) {
 		
 		var rlen = array_length(rls);
 		var i = 0;
-		for(; i < rlen; i++) {
+		while(i < rlen) {
 			
 			var r = rls[i];
-			var rn = i+1 < rlen ? rls[i+1] : undefined;
 			var prev_pos = pos;
 			
 			switch(r.type) {
 				case e_gmre_rule.CHARSET:
-					pos = _check_charset(r, pos, rn);
+					pos = _check_charset(r, pos, to);
 					break;
 				case e_gmre_rule.STRING:
-					pos = _check_string(r, pos, rn);
+					pos = _check_string(r, pos, to);
 					break;
 				case e_gmre_rule.LOOP:
-					pos = _check_loop(r, pos, rn);
+					pos = _check_loop(r, pos, to);
 					break;
 			}
 			
 			if pos == -1 return -1;
-			//if !_check_custom_pos(r, prev_pos, pos) return -1;
+			if !_check_custom_pos(r, prev_pos, pos) return -1;
+			
+			i++;
 		}
 		
 		return i == rlen ? pos : -1;
 	}
 	
-	static _check_custom_pos = function(r, from, to) {
+	static _check_custom_pos = function(r, pos, to) {
 		
-		var len = array_length(r.custom_pos);
-		var len2 = array_length(r.custom_pos_eq);
-		
-		for(var pos = from; pos <= to; pos++) {
-			for(var i = 0; i < len; i++) {
-				var cp = r.custom_pos[i];
-				var cplen = array_length(cp);
-				switch(cp[cplen-1]) {
-					case 0:
-						break;
-					case 1:
-						break;
-					case 2:
-						break;
-					case 3:
-						break;
+		var cpr_len = array_length(r.custom_pos_rules);
+		for(var cpri = 0; cpri < cpr_len; cpri++) {
+			var cpr = r.custom_pos_rules[cpri];
+			
+			var cpl = array_length(cpr.custom_pos);
+			for(var i = 0; i < cpl; i++) {
+				for(var p = pos; p <= to; p++) {
+					var result = _check_custom_pos2(cpr.custom_pos[i], cpr.custom_pos_eq, p, to) xor cpr.negated;
+					if !result return false;
 				}
 			}
 		}
-		
 		return true;
 	}
 	
-	static _check_loop = function(r, pos, rn) {
+	static _check_custom_pos2 = function(cp, cp_eq, pos, to) {
+		
+		var len = array_length(cp);
+		switch(cp[len-1]) {
+			case 0:
+				if pos == cp[0] - 1 {
+					if !_custom_pos_compare(pos, to, cp_eq) return false;
+				}
+				break;
+		}
+		return true;
+	}
+	
+	static _custom_pos_compare = function(pos, to, cp_eq) {
+		
+		var eqlen = array_length(cp_eq);
+		for(var i = 0; i < eqlen; i++) {
+			var cpeq = cp_eq[i];
+			switch(cpeq[1]) {
+				case 2:
+					if _check_charset(cpeq[0], pos, to) == -1 return false;
+					break;
+				case 3:
+					if _check_string(cpeq[0], pos, to) == -1 return false;
+					break;
+			}
+		}
+		return true;
+	}
+	
+	static _check_loop = function(r, pos, to) {
 		
 		var l = array_length(r.rules);
-		if pos >= str_len and r.rmin == 0 return pos;
+		if pos >= to and r.rmin == 0 return pos;
 		if l == 0 return pos;
 		
 		var rep = 0;
-		var p = _apply_rules(r.rules, pos);
+		var p = _apply_rules(r.rules, pos, to);
 		while(p != -1 xor r.negated) {
 			rep++;
 			pos = p;
-			if pos >= str_len or rep >= r.rmax break;
-			p = _apply_rules(r.rules, pos);
+			if pos >= to or rep >= r.rmax break;
+			p = _apply_rules(r.rules, pos, to);
 		}
 		return rep >= r.rmin ? pos : -1;
 	}
-	
-	static _skip_inf = function(r, pos, rn) {
-		if r.rmax == infinity and rn != undefined and pos < str_len {
-			switch(rn.type) {
-				case e_gmre_rule.CHARSET:
-					if _check_charset(rn, pos, undefined) != -1 return true;
-					break;
-				case e_gmre_rule.STRING:
-					if _check_string(rn, pos, undefined) != -1 return true;
-					break;
-				case e_gmre_rule.LOOP:
-					if _check_loop(rn, pos, undefined) != -1 return true;
-					break;
-			}
-		}
-		return false;
-	}
-	
-	static _check_charset = function(r, pos, rn) {
+
+	static _check_charset = function(r, pos, to) {
 		
 		var rep = 0;
-		if pos >= str_len and r.rmin == 0 return pos;
+		if pos >= to {
+			if r.rmin == 0 return pos;
+			else return -1;
+		}
 		
-		if !_skip_inf(r, pos, rn) and pos < str_len {
-			var ch = str_arr[pos];
-			while(_ch_in_charset(r, ch) xor r.negated) {
-				rep++;
-				pos++;
-				if pos >= str_len or rep >= r.rmax or _skip_inf(r, pos, rn) break;
-				ch = str_arr[pos];
-			}
+		var ch = str_arr[pos];
+		while(_ch_in_charset(r, ch) xor r.negated) {
+			rep++;
+			pos++;
+			if pos >= to or rep >= r.rmax break;
+			ch = str_arr[pos];
 		}
 		
 		return rep >= r.rmin ? pos : -1;
@@ -346,30 +353,31 @@ function expression(expr = "", simple = false) constructor {
 		return false;
 	}
 	
-	static _check_string = function(r, pos, rn) {
+	static _check_string = function(r, pos, to) {
 		
 		var l = array_length(r.str);
-		if pos >= str_len and r.rmin == 0 return pos;
+		if pos >= to {
+			if r.rmin == 0 return pos;
+			else return -1;
+		}
 		if l == 0 return pos;
 		
 		var rep = 0;
-		if !_skip_inf(r, pos, rn) and pos < str_len {
-			while(_str_in_str(r, pos) xor r.negated) {
-				rep++;
-				pos += l;
-				if pos >= str_len or rep >= r.rmax or _skip_inf(r, pos, rn) break;
-			}
+		while(_str_in_str(r, pos, to) xor r.negated) {
+			rep++;
+			pos += l;
+			if pos >= to or rep >= r.rmax break;
 		}
 		
 		return rep >= r.rmin ? pos : -1;
 	}
 	
-	static _str_in_str = function(r, pos) {
+	static _str_in_str = function(r, pos, to) {
 		
 		var l = array_length(r.str);
 		
 		for(var i = 0; i < l; i++) {
-			if pos + i >= str_len return false;
+			if pos + i >= to return false;
 			if str_arr[pos+i] != r.str[i] return false;
 		}
 		return true;
@@ -440,7 +448,7 @@ function expression(expr = "", simple = false) constructor {
 					if !closed return _error("UNCLOSED CUSTOM POS AT: " + string(i+1), i+1);
 					if !r._process_custom_pos() return _error("CUSTOM POS SYNTAX ERROR");
 					
-					array_push(last_rule.custom_pos, r);
+					array_push(last_rule.custom_pos_rules, r);
 					i = ri - 1;
 					
 					break;
@@ -615,6 +623,7 @@ function _gmre_rule_(t, n) constructor {
 	rules = [];
 	charset = [];
 	str = [];
+	custom_pos_rules = [];
 	custom_pos = [];
 	custom_pos_eq = [];
 	
@@ -642,13 +651,13 @@ function _gmre_rule_(t, n) constructor {
 			var chp = (i != 0 ? str[i-1] : "");
 			
 			if _is_number(ch) {
-				t = 0;
+				if t == -1 t = 0;
 				c += ch;
 			}
 			else switch(ch) {
 				case "n":
 					if eq break;
-					t = 1;
+					if t == -1 t = 1;
 					array_push(a, "n");
 					break;
 			
@@ -747,8 +756,10 @@ function _gmre_rule_(t, n) constructor {
 			}
 		}
 		
-		array_push(a, t);
-		array_push(custom_pos_eq, a);
+		if array_length(a) != 0 {
+			array_push(a, t);
+			array_push(custom_pos_eq, a);
+		}
 		
 		return true;
 	}
@@ -832,6 +843,7 @@ function _gmre_rule_(t, n) constructor {
 		var first = true;
 		var mn = "";
 		var mx = "";
+		var from = ri;
 		
 		while(ri < exp_len) {
 			
@@ -848,6 +860,7 @@ function _gmre_rule_(t, n) constructor {
 					break;
 				}
 				else if ch == "-" {
+					if ri == from break;
 					valid = false;
 					if mn = "" break;
 					first = false;
