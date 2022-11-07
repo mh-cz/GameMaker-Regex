@@ -1,4 +1,4 @@
-enum e_gmre_rule { CHARSET, STRING, LOOP, CUSTOM_POS }
+enum e_gmre_rule { CHARSET, STRING, LOOP, CUSTOM_POS, CP_X, CP_NX, CP_CHARSET, CP_STRING }
 
 #region FN
 function gmre_match(ex, str) {
@@ -224,6 +224,7 @@ function expression(expr = "", simple = false) constructor {
 	}
 	#endregion
 	
+	#region APPLY RULES
 	static _apply_rules = function(rls, pos, to) {
 		
 		var rlen = array_length(rls);
@@ -253,59 +254,117 @@ function expression(expr = "", simple = false) constructor {
 		
 		return i == rlen ? pos : -1;
 	}
+	#endregion
 	
+	#region CUSTOM POS
 	static _check_custom_pos = function(r, pos, to) {
 		
 		var cpr_len = array_length(r.custom_pos_rules);
 		for(var cpri = 0; cpri < cpr_len; cpri++) {
 			var cpr = r.custom_pos_rules[cpri];
-			
 			var cpl = array_length(cpr.custom_pos);
 			for(var i = 0; i < cpl; i++) {
-				for(var p = pos; p <= to; p++) {
-					var result = _check_custom_pos2(cpr.custom_pos[i], cpr.custom_pos_eq, p, to) xor cpr.negated;
-					if !result return false;
+				for(var from = pos; from <= to; from++) {
+					if !_check_custom_pos_get_pos(cpr.custom_pos[i], cpr.custom_pos_eq, from, to, cpr.negated) return false;
 				}
 			}
 		}
 		return true;
 	}
 	
-	static _check_custom_pos2 = function(cp, cp_eq, pos, to) {
+	static _check_custom_pos_get_pos = function(cp, cp_eq, pos, to, neg) {
+
+		//show_debug_message(cp);
 		
 		var len = array_length(cp);
-		switch(cp[len-1]) {
-			case 0:
-				if pos == cp[0] - 1 {
-					if !_custom_pos_compare(pos, to, cp_eq) return false;
+		switch(cp[0]) {
+			
+			case e_gmre_rule.CP_X: // x
+			
+				if array_length(cp) != 2 return false;
+				
+				if pos != cp[1] break;
+				var p = cp[1]-1;
+				
+				if p < 0 or p >= str_len-1 return false;
+				if !_custom_pos_compare(p, to, cp_eq, neg) return false;
+				break;
+			
+			case e_gmre_rule.CP_NX: // n+-x
+				
+				if array_length(cp) != 3 return false;
+				
+				if pos != to break;
+				var p = to-1;
+				
+				switch(cp[1]) {
+					case "+": p += cp[2]; break;
+					case "-": p -= cp[2]; break;
 				}
+				
+				if p < 0 or p >= str_len-1 return false;
+				if !_custom_pos_compare(p, to, cp_eq, neg) return false;
+				break;
+			
+			case e_gmre_rule.CP_CHARSET: // CHARSET+-x
+
+				if array_length(cp) != 4 return false;
+				
+				var p = _check_charset(cp[1], pos, to);
+				if p == -1 break;
+				
+				switch(cp[2]) {
+					case "+": p = p - 1 + cp[3]; break;
+					case "-": p = pos - cp[3]; break;
+				}
+				
+				if p < 0 or p >= str_len-1 return false;
+				if !_custom_pos_compare(p, to, cp_eq, neg) return false;
+				break;
+			
+			case e_gmre_rule.CP_STRING: // STRING+-x
+				
+				if array_length(cp) != 4 return false;
+				
+				var p = _check_string(cp[1], pos, to);
+				if p == -1 break;
+				
+				switch(cp[2]) {
+					case "+": p = p - 1 + cp[3]; break;
+					case "-": p = pos - cp[3]; break;
+				}
+				
+				if p < 0 or p >= str_len-1 return false;
+				if !_custom_pos_compare(p, to, cp_eq, neg) return false;
 				break;
 		}
+		
 		return true;
 	}
 	
-	static _custom_pos_compare = function(pos, to, cp_eq) {
+	static _custom_pos_compare = function(pos, to, cp_eq, neg) {
 		
 		var eqlen = array_length(cp_eq);
 		for(var i = 0; i < eqlen; i++) {
 			var cpeq = cp_eq[i];
-			switch(cpeq[1]) {
-				case 2:
-					if _check_charset(cpeq[0], pos, to) == -1 return false;
+			switch(cpeq[0]) {
+				case e_gmre_rule.CP_CHARSET:
+					if _check_charset(cpeq[1], pos, to) != -1 xor neg return true;
 					break;
-				case 3:
-					if _check_string(cpeq[0], pos, to) == -1 return false;
+				case e_gmre_rule.CP_STRING:
+					if _check_string(cpeq[1], pos, to) != -1 xor neg return true;
 					break;
 			}
 		}
-		return true;
+		return false;
 	}
+	#endregion
 	
+	#region LOOP
 	static _check_loop = function(r, pos, to) {
 		
-		var l = array_length(r.rules);
-		if pos >= to and r.rmin == 0 return pos;
-		if l == 0 return pos;
+		if pos >= to return r.rmin == 0 ? pos : -1;
+		if array_length(r.rules) == 0 return pos;
 		
 		var rep = 0;
 		var p = _apply_rules(r.rules, pos, to);
@@ -317,15 +376,14 @@ function expression(expr = "", simple = false) constructor {
 		}
 		return rep >= r.rmin ? pos : -1;
 	}
+	#endregion
 
+	#region CHARSET
 	static _check_charset = function(r, pos, to) {
 		
-		var rep = 0;
-		if pos >= to {
-			if r.rmin == 0 return pos;
-			else return -1;
-		}
+		if pos >= to return r.rmin == 0 ? pos : -1;
 		
+		var rep = 0;
 		var ch = str_arr[pos];
 		while(_ch_in_charset(r, ch) xor r.negated) {
 			rep++;
@@ -352,14 +410,13 @@ function expression(expr = "", simple = false) constructor {
 		
 		return false;
 	}
+	#endregion
 	
+	#region STRING
 	static _check_string = function(r, pos, to) {
 		
+		if pos >= to return r.rmin == 0 ? pos : -1;
 		var l = array_length(r.str);
-		if pos >= to {
-			if r.rmin == 0 return pos;
-			else return -1;
-		}
 		if l == 0 return pos;
 		
 		var rep = 0;
@@ -382,7 +439,9 @@ function expression(expr = "", simple = false) constructor {
 		}
 		return true;
 	}
+	#endregion
 	
+	#region GENERATE
 	static _generate_rules = function() {
 		
 		var loop = undefined;
@@ -578,7 +637,9 @@ function expression(expr = "", simple = false) constructor {
 		
 		return ri;
 	}
+	#endregion
 	
+	#region FN
 	static _is_number = function(ch) {
 		var ascii = ord(ch);
 		return ascii > 47 and ascii < 58;
@@ -610,6 +671,7 @@ function expression(expr = "", simple = false) constructor {
 		str = string_replace_all(str, "\\]", "°²");
 		return str;
 	}
+	#endregion
 }
 #endregion
 
@@ -640,9 +702,8 @@ function _gmre_rule_(t, n) constructor {
 		
 		_process_string();
 		
-		var c = "";
-		var t = -1; // 0:x, 1:n+-x, 2:[]+-x, 3:||+-x
-		var a = [];
+		var snum = "";
+		var a = [-1];
 		var eq = false;
 		
 		var len = array_length(str);
@@ -651,36 +712,39 @@ function _gmre_rule_(t, n) constructor {
 			var chp = (i != 0 ? str[i-1] : "");
 			
 			if _is_number(ch) {
-				if t == -1 t = 0;
-				c += ch;
+				if a[0] == -1 a[0] = e_gmre_rule.CP_X;
+				snum += ch;
 			}
 			else switch(ch) {
 				case "n":
-					if eq break;
-					if t == -1 t = 1;
-					array_push(a, "n");
-					break;
-			
-				case "+":
-				case "-":
-					if eq break;
-					array_push(a, ch);
-					c = "";
+					if a[0] == -1 a[0] = e_gmre_rule.CP_NX;
 					break;
 				
-				case ">":
-					if eq break;
-					if c != "" array_push(a, real(c));
-					array_push(a, t + 0.1);
+				case "+":
+				case "-":
+					if a[0] == e_gmre_rule.CP_X break;
+					if snum != "" array_push(a, real(snum));
+					array_push(a, ch);
+					snum = "";
+					break;
+				
+				case ",":
+					if snum != "" array_push(a, real(snum));
+					array_push(!eq ? custom_pos : custom_pos_eq, a);
+					a = [-1];
+					snum = "";
+					break;
+					
+				case "=":
+					if snum != "" array_push(a, real(snum));
 					array_push(custom_pos, a);
-					t = -1;
-					a = [];
-					c = "";
+					eq = true;
+					a = [-1];
+					snum = "";
 					break;
 				
 				case "[":
 					if chp == "\\" break;
-					t = 2;
 					
 					var r = new _gmre_rule_(e_gmre_rule.CHARSET, chp == "!");
 					var closed = false;
@@ -696,19 +760,22 @@ function _gmre_rule_(t, n) constructor {
 						}	
 						array_push(r.str, ch);
 					}					
-					if !closed return false;
+					if !closed break;
 					
 					ri = _get_repeats(r, ri, len);
-					if floor(ri) != ri return false;
+					if floor(ri) != ri break;
 					
+					r._process_charset();
+					
+					if a[0] == -1 a[0] = e_gmre_rule.CP_CHARSET;
 					array_push(a, r);
-					i = ri - 1;
+					snum = "";
 					
+					i = ri - 1;
 					break;
 				
 				case "|":
 					if chp == "\\" break;
-					t = 3;
 					
 					var r = new _gmre_rule_(e_gmre_rule.STRING, chp == "!");
 					var closed = false;
@@ -724,42 +791,23 @@ function _gmre_rule_(t, n) constructor {
 						}
 						array_push(r.str, ch);
 					}
-					if !closed return false;
+					if !closed break;
 					
 					ri = _get_repeats(r, ri, len);
-					if floor(ri) != ri return false;						
+					if floor(ri) != ri break;
 					
+					r._process_string();
+					
+					if a[0] == -1 a[0] = e_gmre_rule.CP_STRING;
 					array_push(a, r);
+					snum = "";
+					
 					i = ri - 1;
-					
-					break;
-					
-				case "=":
-					if eq break;
-					if c != ""  array_push(a, real(c));
-					array_push(a, t);
-					array_push(custom_pos, a);
-					t = -1;
-					a = [];
-					c = "";
-					eq = true;
-					break;
-					
-				case ",":
-					if c != "" and !eq array_push(a, real(c));
-					array_push(a, t);
-					array_push(eq ? custom_pos_eq : custom_pos, a);
-					t = -1;
-					a = [];
-					c = "";
 					break;
 			}
 		}
 		
-		if array_length(a) != 0 {
-			array_push(a, t);
-			array_push(custom_pos_eq, a);
-		}
+		if a[0] != -1 array_push(custom_pos_eq, a);
 		
 		return true;
 	}
