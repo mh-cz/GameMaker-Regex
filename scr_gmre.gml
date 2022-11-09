@@ -1,6 +1,6 @@
 enum e_gmre_rule { CHARSET, STRING, LOOP, CUSTOM_POS, CP_X, CP_NX, CP_CHARSET, CP_STRING }
 
-#region FN
+#region GMRE
 function gmre_match(ex, str) {
 	return ex.match(str);
 }
@@ -37,8 +37,7 @@ function gmre_contains(ex, str, substr) {
 #region EXPR CODE
 function expression(expr = "", simple = false) constructor {
 	
-	#region INPUT
-	
+	#region VAR
 	rules = [];
 	exp_arr = [];
 	exp_len = 0;
@@ -46,7 +45,9 @@ function expression(expr = "", simple = false) constructor {
 	str_len = 0
 	ok = true;
 	err = "";
+	#endregion
 	
+	#region INPUT
 	if expr != "" parse(expr, simple);
 	
 	static parse = function(expr, simple = false) {
@@ -65,31 +66,6 @@ function expression(expr = "", simple = false) constructor {
 		if !_generate_rules() return false;
 		
 		return true;
-	}
-	
-	static _unsimplify = function(expr) {
-		
-		newexpr = "";
-		collector = "";
-		var l = string_length(expr);
-		for(var i = 1; i <= l; i++) {
-			var ch = string_char_at(expr, i);
-
-			if ch == "*" and string_char_at(expr, i-1) != "\\" {
-				if collector != "" newexpr += collector + "|";
-				collector = "";
-				newexpr += "![]>";
-			}
-			else if ch == "\\" and string_char_at(expr, i+1) == "*" {
-				continue;
-			}
-			else {
-				if collector == "" collector = "|"
-				collector += ch;
-			}
-		}
-		if collector != "" newexpr += collector + "|";
-		return newexpr;
 	}
 	
 	static match = function(str) {
@@ -232,17 +208,18 @@ function expression(expr = "", simple = false) constructor {
 		while(i < rlen) {
 			
 			var r = rls[i];
+			var nr = i+1 < rlen ? rls[i+1] : undefined;
 			var prev_pos = pos;
 			
 			switch(r.type) {
 				case e_gmre_rule.CHARSET:
-					pos = _check_charset(r, pos, to);
+					pos = _check_charset(r, pos, to, nr);
 					break;
 				case e_gmre_rule.STRING:
-					pos = _check_string(r, pos, to);
+					pos = _check_string(r, pos, to, nr);
 					break;
 				case e_gmre_rule.LOOP:
-					pos = _check_loop(r, pos, to);
+					pos = _check_loop(r, pos, to, nr);
 					break;
 			}
 			
@@ -257,84 +234,84 @@ function expression(expr = "", simple = false) constructor {
 	#endregion
 	
 	#region CUSTOM POS
-	static _check_custom_pos = function(r, pos, to) {
+	static _check_custom_pos = function(r, from, to) {
 		
 		var cpr_len = array_length(r.custom_pos_rules);
 		for(var cpri = 0; cpri < cpr_len; cpri++) {
 			var cpr = r.custom_pos_rules[cpri];
 			var cpl = array_length(cpr.custom_pos);
 			for(var i = 0; i < cpl; i++) {
-				for(var from = pos; from <= to; from++) {
-					if !_check_custom_pos_get_pos(cpr.custom_pos[i], cpr.custom_pos_eq, from, to, cpr.negated) return false;
+				for(var pos = from; pos <= to; pos++) {
+					if !_check_custom_pos_get_pos(cpr.custom_pos[i], cpr.custom_pos_eq, pos, from, to, cpr.negated) return false;
 				}
 			}
 		}
 		return true;
 	}
 	
-	static _check_custom_pos_get_pos = function(cp, cp_eq, pos, to, neg) {
-
-		//show_debug_message(cp);
+	static _check_custom_pos_get_pos = function(cp, cp_eq, pos, from, to, neg) {
 		
 		var len = array_length(cp);
 		switch(cp[0]) {
 			
 			case e_gmre_rule.CP_X: // x
 			
-				if array_length(cp) != 2 return false;
+				if len != 2 return false;
 				
-				if pos != cp[1] break;
-				var p = cp[1]-1;
+				var p = from + cp[1]-1;
+				if pos != p break;
 				
-				if p < 0 or p >= str_len-1 return false;
+				if p < 0 or p >= str_len break;
 				if !_custom_pos_compare(p, to, cp_eq, neg) return false;
 				break;
 			
 			case e_gmre_rule.CP_NX: // n+-x
 				
-				if array_length(cp) != 3 return false;
+				if !(len == 1 or len == 3) return false;
 				
 				if pos != to break;
 				var p = to-1;
 				
-				switch(cp[1]) {
+				if len == 3 switch(cp[1]) {
 					case "+": p += cp[2]; break;
 					case "-": p -= cp[2]; break;
 				}
 				
-				if p < 0 or p >= str_len-1 return false;
+				if p < 0 or p >= str_len break;
 				if !_custom_pos_compare(p, to, cp_eq, neg) return false;
 				break;
 			
 			case e_gmre_rule.CP_CHARSET: // CHARSET+-x
 
-				if array_length(cp) != 4 return false;
+				if len != 4 return false;
 				
-				var p = _check_charset(cp[1], pos, to);
+				var p = _check_charset(cp[1], pos, to, undefined);
 				if p == -1 break;
+				p--;
 				
 				switch(cp[2]) {
-					case "+": p = p - 1 + cp[3]; break;
+					case "+": p = p + cp[3]; break;
 					case "-": p = pos - cp[3]; break;
 				}
 				
-				if p < 0 or p >= str_len-1 return false;
+				if p < 0 or p >= str_len break;
 				if !_custom_pos_compare(p, to, cp_eq, neg) return false;
 				break;
 			
 			case e_gmre_rule.CP_STRING: // STRING+-x
 				
-				if array_length(cp) != 4 return false;
+				if len != 4 return false;
 				
-				var p = _check_string(cp[1], pos, to);
+				var p = _check_string(cp[1], pos, to, undefined);
 				if p == -1 break;
+				p--;
 				
 				switch(cp[2]) {
-					case "+": p = p - 1 + cp[3]; break;
+					case "+": p = p + cp[3]; break;
 					case "-": p = pos - cp[3]; break;
 				}
 				
-				if p < 0 or p >= str_len-1 return false;
+				if p < 0 or p >= str_len break;
 				if !_custom_pos_compare(p, to, cp_eq, neg) return false;
 				break;
 		}
@@ -349,10 +326,10 @@ function expression(expr = "", simple = false) constructor {
 			var cpeq = cp_eq[i];
 			switch(cpeq[0]) {
 				case e_gmre_rule.CP_CHARSET:
-					if _check_charset(cpeq[1], pos, to) != -1 xor neg return true;
+					if _check_charset(cpeq[1], pos, to, undefined) != -1 xor neg return true;
 					break;
 				case e_gmre_rule.CP_STRING:
-					if _check_string(cpeq[1], pos, to) != -1 xor neg return true;
+					if _check_string(cpeq[1], pos, to, undefined) != -1 xor neg return true;
 					break;
 			}
 		}
@@ -361,31 +338,38 @@ function expression(expr = "", simple = false) constructor {
 	#endregion
 	
 	#region LOOP
-	static _check_loop = function(r, pos, to) {
+	static _check_loop = function(r, pos, to, nr) {
 		
 		if pos >= to return r.rmin == 0 ? pos : -1;
 		if array_length(r.rules) == 0 return pos;
 		
 		var rep = 0;
-		var p = _apply_rules(r.rules, pos, to);
-		while(p != -1 xor r.negated) {
+		while(true) {		
+			var p = _apply_rules(r.rules, pos, to);
+			if !(p != -1 xor r.negated) break;
 			rep++;
 			pos = p;
 			if pos >= to or rep >= r.rmax break;
-			p = _apply_rules(r.rules, pos, to);
 		}
+		
 		return rep >= r.rmin ? pos : -1;
 	}
 	#endregion
 
 	#region CHARSET
-	static _check_charset = function(r, pos, to) {
+	static _check_charset = function(r, pos, to, nr) {
 		
 		if pos >= to return r.rmin == 0 ? pos : -1;
 		
 		var rep = 0;
-		var ch = str_arr[pos];
-		while(_ch_in_charset(r, ch) xor r.negated) {
+		while(true) {
+			if nr != undefined and rep >= r.rmin and r.rmin != r.rmax {
+				var nrpos = _apply_rules([nr], pos, to);
+				if nrpos != -1 return pos;
+			}
+			
+			var ch = str_arr[pos];
+			if !(_ch_in_charset(r, ch) xor r.negated) break;
 			rep++;
 			pos++;
 			if pos >= to or rep >= r.rmax break;
@@ -397,9 +381,10 @@ function expression(expr = "", simple = false) constructor {
 	
 	static _ch_in_charset = function(r, ch) {
 		
-		var ch_ascii = ord(ch);
 		var l = array_length(r.charset);
+		if l == 0 return true;
 		
+		var ch_ascii = ord(ch);
 		for(var i = 0; i < l; i++) {
 			var chrs = r.charset[i];
 			if is_array(chrs) {
@@ -413,14 +398,20 @@ function expression(expr = "", simple = false) constructor {
 	#endregion
 	
 	#region STRING
-	static _check_string = function(r, pos, to) {
+	static _check_string = function(r, pos, to, nr) {
 		
 		if pos >= to return r.rmin == 0 ? pos : -1;
 		var l = array_length(r.str);
 		if l == 0 return pos;
 		
 		var rep = 0;
-		while(_str_in_str(r, pos, to) xor r.negated) {
+		while(true) {
+			if nr != undefined and rep >= r.rmin and r.rmin != r.rmax {
+				var nrpos = _apply_rules([nr], pos, to);
+				if nrpos != -1 return pos;
+			}
+			
+			if !(_str_in_str(r, pos, to) xor r.negated) break;
 			rep++;
 			pos += l;
 			if pos >= to or rep >= r.rmax break;
@@ -441,7 +432,7 @@ function expression(expr = "", simple = false) constructor {
 	}
 	#endregion
 	
-	#region GENERATE
+	#region GENERATE RULES
 	static _generate_rules = function() {
 		
 		var loop = undefined;
@@ -639,7 +630,7 @@ function expression(expr = "", simple = false) constructor {
 	}
 	#endregion
 	
-	#region FN
+	#region FUNC
 	static _is_number = function(ch) {
 		var ascii = ord(ch);
 		return ascii > 47 and ascii < 58;
@@ -660,6 +651,31 @@ function expression(expr = "", simple = false) constructor {
 		var str = "";
 		for(var i = 0, l = array_length(arr); i < l; i++) str += string(arr[i]);
 		return str;
+	}
+	
+	static _unsimplify = function(expr) {
+		
+		newexpr = "";
+		collector = "";
+		var l = string_length(expr);
+		for(var i = 1; i <= l; i++) {
+			var ch = string_char_at(expr, i);
+
+			if ch == "*" and string_char_at(expr, i-1) != "\\" {
+				if collector != "" newexpr += collector + "|";
+				collector = "";
+				newexpr += "[]0->";
+			}
+			else if ch == "\\" and string_char_at(expr, i+1) == "*" {
+				continue;
+			}
+			else {
+				if collector == "" collector = "|"
+				collector += ch;
+			}
+		}
+		if collector != "" newexpr += collector + "|";
+		return newexpr;
 	}
 	
 	static _escape = function(str) {
