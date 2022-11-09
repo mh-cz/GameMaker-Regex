@@ -44,7 +44,7 @@ Having loop rules inside isn't supported
 `<rule> {x=|a|,[b]}` The xth character of the rule on the left must be equal to the rule `|a|` **OR** to the rule `[b]`  
 `<rule> {x,y=[a],|b|}` The xth character **AND** the yth character of the rule on the left must be equal to the rule `[a]` **OR** to the rule `|b|`  
 
-The lowercase "n" stands for the last character and `+` or `-` can be added to it to add or subtract a number from this position
+The lowercase "n" stands for the last character and `+` or `-` can be added to it to add or subtract a number from this position  
 `<rule> {n=|a|}` The last character of the rule on the left must be equal to the rule `|a|`  
 `<rule> {n-1=|a|}` The penultimate character of the rule on the left must be equal to the rule `|a|`  
   
