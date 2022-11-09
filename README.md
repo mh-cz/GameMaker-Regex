@@ -6,5 +6,5 @@ Expressions can be written in two modes: *exact* and *simple*
   
 ### Rules
 The entire system works around rules  
-There are 4 types of rules: charset `[]`, string `||`, loop `()` and custom position `{}`  
-Each rule can be negated, chained using repeats and can have a custom position subrule for futher specs added to it  
+There are 3 types of rules: charset `[]`, string `||`, loop `()` + position subrule `{}`  
+Each rule can be negated, chained using repeats and can have a position subrule added to it  
