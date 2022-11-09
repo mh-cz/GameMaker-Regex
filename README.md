@@ -30,3 +30,13 @@ Range:
 `|x|` String "x"  
 `|x z|` String "x z"  
 `|xYz|` String "xYz"  
+  
+### Loop
+Loop **cannot** contain another loop  
+`()` Empty loop  
+`(|x|[y-z])` Loop containing a string rule and a charset rule  
+
+
+
+
+
