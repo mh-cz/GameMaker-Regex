@@ -12,7 +12,7 @@ Each rule can be negated, chained using repeats and can have a position subrule 
 Spaces between rules are allowed but not between *rule and repeat* and *negation and rule*  
   
 `* - optional`  
-`<Negation>* <Rule> <Repeats>* <Custom Pos>*`  
+`<negation>* <rule> <repeats>* <pos>*`  
   
 ### Charset	
 `[]` Any characters  
@@ -36,7 +36,15 @@ Loop **cannot** contain another loop
 `()` Empty loop  
 `(|x|[y-z])` Loop containing a string rule and a charset rule  
 
-
+### Position subrule
+This subrule cannot be alone  
+Having loop rules inside isn't supported  
+`<rule> {x=|a|}` The xth character of the rule on the left must be equal to the rule `|a|`  
+`<rule> {x=|a|,[b]}` The xth character of the rule on the left must be equal to the rule `|a|` **OR** to the rule `[b]`  
+`<rule> {x,y=[a],|b|}` The xth character **AND** the yth character of the rule on the left must be equal to the rule `[a]` **OR** to the rule `|b|`  
+  
+The lowercase "n" stands for the last character
+`<rule> {n=|a|}` The last character of the rule on the left must be equal to the rule `|a|`  
 
 
 
