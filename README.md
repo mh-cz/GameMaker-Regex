@@ -8,19 +8,19 @@ Expressions can be written in two modes: *exact* and *simple*
 - Match  
 `gmre_match(ex, string)` -> bool  
 - Find  
-`gmre_find(ex, str, substr)` -> string  
+`gmre_find(ex, str)` -> string  
 - Find all  
-`gmre_find_all(ex, str, substr)` -> array of strings  
+`gmre_find_all(ex, str)` -> array of strings  
 - Find position  
-`gmre_find_pos(ex, str, substr)` -> real  
+`gmre_find_pos(ex, str)` -> real  
 - Find all position  
-`gmre_find_pos_all(ex, str, substr)` -> array of reals  
+`gmre_find_pos_all(ex, str)` -> array of reals  
 - Replace  
 `gmre_replace(ex, str, substr)` -> string  
 - Replace all  
 `gmre_replace_all(ex, str, substr_or_array)` -> string  
 - Check if contains  
-`gmre_contains(ex, str, substr)` -> bool  
+`gmre_contains(ex, str)` -> bool  
 
 ## How do I use it?
 `simple - bool (optional)`  
