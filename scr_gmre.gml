@@ -2,28 +2,28 @@ enum e_gmre_rule { CHARSET, STRING, LOOP, CUSTOM_POS, CP_X, CP_NX, CP_CHARSET, C
 
 #region GMRE
 
-function gmre_ex_parse(ex, new_expression_string) {
-	return ex.parse(new_expression_string);
+function gmre_ex_parse(ex, new_expr_string) {
+	return ex.parse(new_expr_string);
 }
 
 function gmre_match(ex, str) {
 	return ex.match(str);
 }
 
-function gmre_find(ex, str, substr) {
-	return ex.find(str, substr);
+function gmre_find(ex, str) {
+	return ex.find(str);
 }
 
-function gmre_find_all(ex, str, substr) {
-	return ex.find_all(str, substr);
+function gmre_find_all(ex, str) {
+	return ex.find_all(str);
 }
 
-function gmre_find_pos(ex, str, substr) {
-	return ex.find_pos(str, substr);
+function gmre_find_pos(ex, str) {
+	return ex.find_pos(str);
 }
 
-function gmre_find_pos_all(ex, str, substr) {
-	return ex.find_pos_all(str, substr);
+function gmre_find_pos_all(ex, str) {
+	return ex.find_pos_all(str);
 }
 
 function gmre_replace(ex, str, substr) {
@@ -34,8 +34,8 @@ function gmre_replace_all(ex, str, substr_or_array) {
 	return ex.replace_all(str, substr_or_array);
 }
 
-function gmre_contains(ex, str, substr) {
-	return ex.find_pos(str, substr) != 0;
+function gmre_contains(ex, str) {
+	return ex.find_pos(str) != 0;
 }
 #endregion
 
