@@ -11,7 +11,7 @@ Expressions can be written in two modes: *exact* and *simple*
 `gmre_find_pos(ex, str, substr)` -> real  
 `gmre_find_pos_all(ex, str, substr)` -> array of reals  
 `gmre_replace(ex, str, substr)` -> string  
-`gmre_replace(ex, str, substr_or_array)` -> string  
+`gmre_replace_all(ex, str, substr_or_array)` -> string  
 `gmre_contains(ex, str, substr)` -> bool  
   
 ## Rules
