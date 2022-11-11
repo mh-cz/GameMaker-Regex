@@ -13,6 +13,22 @@ Expressions can be written in two modes: *exact* and *simple*
 `gmre_replace(ex, str, substr)` -> string  
 `gmre_replace_all(ex, str, substr_or_array)` -> string  
 `gmre_contains(ex, str, substr)` -> bool  
+
+## How do I use it?
+`simple - bool (optional)`  
+  
+Creating an expression:  
+`var ex1 = new expression(expr_string, simple*);`  
+`var ex2 = new expression(expr_string, simple*);`  
+`var ex3 = new expression(expr_string, simple*);`  
+  
+Using an expression:  
+`var result1 = gmre_*(ex1, string, ...)`  
+`var result2 = gmre_*(ex2, string, ...)`  
+`var result3 = gmre_*(ex3, string, ...)`  
+  
+Editing an existing expression  
+`gmre_ex_parse(ex, new_expr_string, simple*)`  
   
 ## Rules
 The entire system works around rules  
