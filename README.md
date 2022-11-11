@@ -4,6 +4,16 @@ Suitable for quick searches or string validations
   
 Expressions can be written in two modes: *exact* and *simple*  
   
+## What can it do?
+`gmre_match(ex, string)` -> bool  
+`gmre_find(ex, str, substr)` -> string  
+`gmre_find_all(ex, str, substr)` -> array of strings  
+`gmre_find_pos(ex, str, substr)` -> real  
+`gmre_find_pos_all(ex, str, substr)` -> array of reals  
+`gmre_replace(ex, str, substr)` -> string  
+`gmre_replace(ex, str, substr_or_array)` -> string  
+`gmre_contains(ex, str, substr)` -> bool  
+  
 ## Rules
 The entire system works around rules  
 There are 3 types of rules: charset `[]`, string `||`, loop `()` + position subrule `{}`  
