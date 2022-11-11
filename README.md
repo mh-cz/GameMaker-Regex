@@ -52,5 +52,7 @@ Rules can be also used to find a position and `+` or `-` can be added to it to a
 `<rule> {[a]+1=[b]}` All positions of characters that meet the condition of the rule `[a]`+1 must be equal to the rule `|b|`  
 `<rule> {[a]-1,|b|+2=[b],|c|}` Positions of `[a]`-1 **AND** `|b|`+2 must be equal to rules `[b]` **OR** `|c|`  
 
+# Cheat sheet
+![gmre](https://user-images.githubusercontent.com/68820052/201385231-ae57f772-6879-4771-ac45-23c4c25d38a6.png)
 
 
