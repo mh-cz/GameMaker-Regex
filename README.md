@@ -9,7 +9,7 @@ The entire system works around rules
 There are 3 types of rules: charset `[]`, string `||`, loop `()` + position subrule `{}`  
 Each rule can be negated, chained using repeats and can have a position subrule added to it  
   
-Spaces between rules are allowed but not between *rule and repeat* and *negation and rule*  
+Spaces between rules are allowed **except** between *rule and repeat* and *negation and rule*  
   
 `* - optional`  
 `<negation>* <rule> <repeats>* <pos>*`  
