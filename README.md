@@ -85,7 +85,11 @@ The lowercase "n" stands for the last character and `+` or `-` can be added to i
 Rules can be also used to find a position and `+` or `-` can be added to it to add or subtract a number from this position  
 `<rule> {[a]+1=[b]}` All positions of characters that meet the condition of the rule `[a]`+1 must be equal to the rule `|b|`  
 `<rule> {[a]-1,|b|+2=[b],|c|}` Positions of `[a]`-1 **AND** `|b|`+2 must be equal to rules `[b]` **OR** `|c|`  
-
+  
+## Good-to-know stuff
+`[a][b][c]` is the same as `|abc|`  
+A rule with min 0 repeats isn't mandatory: `[a][b]0-2[c]` matches with "abc", "abbc" and also "ac"  
+  
 # Cheat sheet
 ![gmre](https://user-images.githubusercontent.com/68820052/201385231-ae57f772-6879-4771-ac45-23c4c25d38a6.png)
 
