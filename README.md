@@ -121,6 +121,7 @@ var split_arr = gmre_split(ex_split_spaces, "blah blah blah");
   
 ### Inventory search
 In simple mode  
+<sup>You can get Foreach for GM [here](https://github.com/mh-cz/GameMaker-Foreach) ;)</sup>  
 Create:   
 ```
 inventory = ["pickaxe", "axe", "red potion", "blue potion"]
