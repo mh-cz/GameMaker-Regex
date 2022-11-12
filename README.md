@@ -22,7 +22,7 @@ Expressions can be written in two modes: *exact* and *simple*
 - Check if contains  
 `gmre_contains(ex, str)` -> bool  
 - Split  
-`gmre_split(ex, str, substr)` -> array of strings  
+`gmre_split(ex, str)` -> array of strings  
   
 ## How do I use it?
 `simple - bool (optional)`  
