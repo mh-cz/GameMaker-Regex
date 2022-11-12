@@ -89,6 +89,7 @@ Rules can be also used to find a position and `+` or `-` can be added to it to a
 `<rule> {[a]-1,|b|+2=[b],|c|}` Positions of `[a]`-1 **AND** `|b|`+2 must be equal to rules `[b]` **OR** `|c|`  
   
 ## Good-to-know stuff
+It's always faster to create expressions in the Create event so you don't parse rules AND process strings at the same time every step  
 `[a][b][c]` is the same as `|abc|`  
 A rule with min 0 repeats isn't mandatory: `[a][b]0-2[c]` matches with "abc", "abbc" and also "ac"  
 Characters used for parsing rules `[ ] { } ( ) |` inside charsets/strings require `\` before them to prevent parsing mistakes -> `[A-z0-9\[\]\{\}\|]`, `|abc\(d\)efg|`
