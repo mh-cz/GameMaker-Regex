@@ -25,7 +25,7 @@ Expressions can be written in two modes: *exact* and *simple*
 `gmre_split(ex, str)` -> array of strings  
   
 ## How do I use it?
-`simple - bool (optional)`  
+`simple - bool (optional, default: false)`  
   
 Creating an expression:  
 `var ex1 = new gmre_ex(expr_string, simple*);`  
