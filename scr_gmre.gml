@@ -55,21 +55,21 @@ function gmre_ex(expression = "", simple = false) constructor {
 	#endregion
 	
 	#region INPUT
-	if expr != "" parse(expression, simple);
+	if expression != "" parse(expression, simple);
 	
-	static parse = function(expr, simple = false) {
+	static parse = function(expression, simple = false) {
 		
-		if simple expr = _unsimplify(expr);
-		else expr = _hide_chars(expr);
+		if simple expression = _unsimplify(expression);
+		else expression = _hide_chars(expression);
 		
 		err = "";
 		ok = true;
 		rules = [];
-		exp_len = string_length(expr);
+		exp_len = string_length(expression);
 		exp_arr = array_create(exp_len);
 		
 		for(var i = 0; i < exp_len; i++)
-			exp_arr[i] = string_char_at(expr, i+1);
+			exp_arr[i] = string_char_at(expression, i+1);
 			
 		if !_generate_rules() return false;
 		
@@ -205,10 +205,12 @@ function gmre_ex(expression = "", simple = false) constructor {
 		for(pos = 0; pos < str_len; pos++) {
 			var to = _apply_rules(rules, pos, str_len);
 			if to == -1 continue;
-			array_push(arr, string_copy(str, from, (pos+1) - from));
+			var s = string_copy(str, from, (pos+1) - from);
+			if s != "" array_push(arr, s);
 			from = to+1;
 		}
-		array_push(arr, string_copy(str, from, (pos+1) - from));
+		var s = string_copy(str, from, (pos+1) - from);
+		if s != "" array_push(arr, s);
 		
 		return arr;
 	}
