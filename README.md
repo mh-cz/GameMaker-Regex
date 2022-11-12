@@ -144,6 +144,7 @@ if keyboard_check_released(vk_anykey) {
 `found_results = ["red potion", "blue potion"]` if `some_keyboard_input = "pot"`  
   
 # Cheat sheet
-![gmre](https://user-images.githubusercontent.com/68820052/201385231-ae57f772-6879-4771-ac45-23c4c25d38a6.png)
+![gmre](https://user-images.githubusercontent.com/68820052/201469874-6cc5c226-f2d6-48c5-856c-46a6be4da779.png)
+
 
 
