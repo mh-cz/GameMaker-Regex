@@ -89,24 +89,35 @@ Rules can be also used to find a position and `+` or `-` can be added to it to a
 `<rule> {[a]-1,|b|+2=[b],|c|}` Positions of `[a]`-1 **AND** `|b|`+2 must be equal to rules `[b]` **OR** `|c|`  
   
 ## Good-to-know stuff
-It's always faster to create expressions in the Create event so you don't parse rules AND process strings at the same time every step  
+It's always faster to create expressions in the Create event so you don't parse rules AND process strings at the same time every step but you can always just do `var result = gmre_do_something(new gmre_ex(""), "")`
 `[a][b][c]` is the same as `|abc|`  
 A rule with min 0 repeats isn't mandatory: `[a][b]0-2[c]` matches with "abc", "abbc" and also "ac"  
 Characters used for parsing rules `[ ] { } ( ) |` inside charsets/strings require `\` before them to prevent parsing mistakes -> `[A-z0-9\[\]\{\}\|]`, `|abc\(d\)efg|`
   
 # Examples
-Email validator (with all valid special characters according to this site: https://help.returnpath.com/hc/en-us/articles/220560587-What-are-the-rules-for-email-address-syntax-)  
+### Email validator 
+With all valid special characters according to this site: https://help.returnpath.com/hc/en-us/articles/220560587-What-are-the-rules-for-email-address-syntax-  
 Create:  
 ```
 mval_str = "[A-z0-9.!#$%&'*+-/=?^_`\{\|]1-64 {1,n,[.!#$%&'*+-/=?^_`\{\|]+1=![.!#$%&'*+-/=?^_`\{\|]} |@| ([A-z0-9-]1-40{1,n=![-]}|.|)1-4 [A-z0-9-]1-10 {1,n=![-]}";
-mail_validator = new gmre_ex(mval_str);
+ex_mail_validator = new gmre_ex(mval_str);
 ```
-Step:  
+Step or whatever:  
 ```
-var is_valid = gmre_match(mail_validator, "some.name@domain.net");
+var is_valid = gmre_match(ex_mail_validator, "some.name@domain.net");
 ```  
-`> true`  
-
+`is_valid = true`  
+  
+### String splitter
+Create:  
+```
+ex_split_spaces = new gmre_ex("| |"); // or in simple syntax: new gmre_ex(" ", true);
+```
+Step or whatever:  
+```
+var split_arr = gmre_split(ex_split_spaces, "a bd d");
+```
+`split_arr = ["a", "bc", "d"]`  
   
 # Cheat sheet
 ![gmre](https://user-images.githubusercontent.com/68820052/201385231-ae57f772-6879-4771-ac45-23c4c25d38a6.png)
