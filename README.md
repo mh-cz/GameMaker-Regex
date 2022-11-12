@@ -131,6 +131,7 @@ Step or whatever:
 ```
 if keyboard_check_released(vk_anykey) {
 	gmre_ex_parse(ex_inv_search, <some_keyboard_input>, true);
+	found_results = [];
 	foreach item in inventory exec {
 		var pos = gmre_find_pos(ex_inv_search, item);
 		if pos != -1 array_push(found_results, item);
