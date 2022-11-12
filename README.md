@@ -21,9 +21,9 @@ Expressions can be written in two modes: *exact* and *simple*
 `gmre_replace_all(ex, str, substr_or_array)` -> string  
 - Check if contains  
 `gmre_contains(ex, str)` -> bool  
-- Split
-`gmre_split(ex, str, substr)` -> array of strings
-
+- Split  
+`gmre_split(ex, str, substr)` -> array of strings  
+  
 ## How do I use it?
 `simple - bool (optional)`  
   
