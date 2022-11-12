@@ -137,9 +137,9 @@ if keyboard_check_released(vk_anykey) {
 	}
 }
 ```
-`found_results = ["axe"]` for `some_keyboard_input = "axe"`  
-`found_results = ["pickaxe", "axe"]` for `some_keyboard_input = "*axe"`  
-`found_results = ["red potion", "blue potion"]` for `some_keyboard_input = "*pot*"`  
+`found_results = ["axe"]`  if  `some_keyboard_input = "axe"`  
+`found_results = ["pickaxe", "axe"]`  if  `some_keyboard_input = "*axe"`  
+`found_results = ["red potion", "blue potion"]`  if  `some_keyboard_input = "*pot*"`  
   
 # Cheat sheet
 ![gmre](https://user-images.githubusercontent.com/68820052/201385231-ae57f772-6879-4771-ac45-23c4c25d38a6.png)
