@@ -119,8 +119,8 @@ var split_arr = gmre_split(ex_split_spaces, "blah blah blah");
 ```
 `split_arr = ["blah", "blah", "blah"]`  
   
-### Search
-In simple mode with wildcards  
+### Inventory search
+In simple mode
 Create:   
 ```
 inventory = ["pickaxe", "axe", "red potion", "blue potion"]
@@ -133,14 +133,14 @@ if keyboard_check_released(vk_anykey) {
 	gmre_ex_parse(ex_inv_search, <some_keyboard_input>, true);
 	found_results = [];
 	foreach item in inventory exec {
-		var pos = gmre_find_pos(ex_inv_search, item);
-		if pos != -1 array_push(found_results, item);
+		var cont = gmre_contains(ex_inv_search, item);
+		if cont array_push(found_results, item);
 	}
 }
 ```
-`found_results = ["axe"]`  if  `some_keyboard_input = "axe"`  
-`found_results = ["pickaxe", "axe"]`  if  `some_keyboard_input = "*axe"`  
-`found_results = ["red potion", "blue potion"]`  if  `some_keyboard_input = "*pot*"`  
+`found_results = ["pickaxe", "axe"]` if `some_keyboard_input = "axe"`  
+`found_results = ["pickaxe", "red potion", "blue potion"]` if `some_keyboard_input = "p"`  
+`found_results = ["red potion", "blue potion"]` if `some_keyboard_input = "pot"`  
   
 # Cheat sheet
 ![gmre](https://user-images.githubusercontent.com/68820052/201385231-ae57f772-6879-4771-ac45-23c4c25d38a6.png)
