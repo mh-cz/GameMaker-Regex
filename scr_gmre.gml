@@ -1,7 +1,6 @@
 enum e_gmre_rule { CHARSET, STRING, LOOP, CUSTOM_POS, CP_X, CP_NX, CP_CHARSET, CP_STRING }
 
 #region GMRE
-
 function gmre_ex_parse(ex, new_expr_string) {
 	return ex.parse(new_expr_string);
 }
@@ -37,10 +36,13 @@ function gmre_replace_all(ex, str, substr_or_array) {
 function gmre_contains(ex, str) {
 	return ex.find_pos(str) != 0;
 }
+function gmre_split(ex, str) {
+	return ex.split(str);
+}
 #endregion
 
-#region EXPRESSION LOGIC
-function expression(expr = "", simple = false) constructor {
+#region EXPRESSION
+function gmre_ex(expression = "", simple = false) constructor {
 	
 	#region VAR
 	rules = [];
@@ -52,13 +54,13 @@ function expression(expr = "", simple = false) constructor {
 	err = "";
 	#endregion
 	
-	#region INPUT FUNC
-	if expr != "" parse(expr, simple);
+	#region INPUT
+	if expr != "" parse(expression, simple);
 	
 	static parse = function(expr, simple = false) {
 		
 		if simple expr = _unsimplify(expr);
-		else expr = _escape(expr);
+		else expr = _hide_chars(expr);
 		
 		err = "";
 		ok = true;
@@ -66,7 +68,8 @@ function expression(expr = "", simple = false) constructor {
 		exp_len = string_length(expr);
 		exp_arr = array_create(exp_len);
 		
-		for(var i = 0; i < exp_len; i++) exp_arr[i] = string_char_at(expr, i+1);
+		for(var i = 0; i < exp_len; i++)
+			exp_arr[i] = string_char_at(expr, i+1);
 			
 		if !_generate_rules() return false;
 		
@@ -77,9 +80,7 @@ function expression(expr = "", simple = false) constructor {
 		
 		if array_length(rules) == 0 return false;
 		
-		str_len = string_length(str);
-		str_arr = array_create(str_len);
-		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
+		_make_str_arr(str);
 		
 		return _apply_rules(rules, 0, str_len) == str_len ? true : false;
 	}
@@ -88,9 +89,7 @@ function expression(expr = "", simple = false) constructor {
 		
 		if array_length(rules) == 0 return "";
 		
-		str_len = string_length(str);
-		str_arr = array_create(str_len);
-		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
+		_make_str_arr(str);
 		
 		for(pos = 0; pos < str_len; pos++) {
 			var to = _apply_rules(rules, pos, str_len);
@@ -105,11 +104,9 @@ function expression(expr = "", simple = false) constructor {
 		
 		if array_length(rules) == 0 return [];
 		
-		var arr = [];
-		str_len = string_length(str);
-		str_arr = array_create(str_len);
-		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
+		_make_str_arr(str);
 		
+		var arr = [];
 		for(pos = 0; pos < str_len; pos++) {
 			var to = _apply_rules(rules, pos, str_len);
 			if to == -1 continue;
@@ -124,9 +121,7 @@ function expression(expr = "", simple = false) constructor {
 		
 		if array_length(rules) == 0 return 0;
 		
-		str_len = string_length(str);
-		str_arr = array_create(str_len);
-		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
+		_make_str_arr(str);
 		
 		for(pos = 0; pos < str_len; pos++) {
 			var to = _apply_rules(rules, pos, str_len);
@@ -141,11 +136,9 @@ function expression(expr = "", simple = false) constructor {
 		
 		if array_length(rules) == 0 return [];
 		
-		var arr = [];
-		str_len = string_length(str);
-		str_arr = array_create(str_len);
-		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
+		_make_str_arr(str);
 		
+		var arr = [];
 		for(pos = 0; pos < str_len; pos++) {
 			var to = _apply_rules(rules, pos, str_len);
 			if to == -1 continue;
@@ -161,9 +154,7 @@ function expression(expr = "", simple = false) constructor {
 		if array_length(rules) == 0 return str;
 		substr = string(substr);
 		
-		str_len = string_length(str);
-		str_arr = array_create(str_len);
-		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
+		_make_str_arr(str);
 		
 		for(pos = 0; pos < str_len; pos++) {
 			var to = _apply_rules(rules, pos, str_len);
@@ -187,9 +178,7 @@ function expression(expr = "", simple = false) constructor {
 		
 		var offset = 0;
 		
-		str_len = string_length(str);
-		str_arr = array_create(str_len);
-		for(var i = 0; i < str_len; i++) str_arr[i] = string_char_at(str, i+1);
+		_make_str_arr(str);
 		
 		for(pos = 0; pos < str_len; pos++) {
 			var to = _apply_rules(rules, pos, str_len);
@@ -198,10 +187,30 @@ function expression(expr = "", simple = false) constructor {
 			var sub = is_arr ? substr_or_array[min(arrlen, ai++)] : substr_or_array;
 			str = string_insert(sub, string_delete(str, pos+1 + offset, to-pos), pos+1 + offset);
 			pos = to-1;
-			offset += string_length(sub)-1 - (to-pos);
+			offset += string_length(sub) - (to-pos);
 		}
 		
 		return str;
+	}
+	
+	static split = function(str) {
+		
+		if array_length(rules) == 0 return [];
+
+		_make_str_arr(str);
+		
+		var arr = [];
+		var from = 1;
+		
+		for(pos = 0; pos < str_len; pos++) {
+			var to = _apply_rules(rules, pos, str_len);
+			if to == -1 continue;
+			array_push(arr, string_copy(str, from, (pos+1) - from));
+			from = to+1;
+		}
+		array_push(arr, string_copy(str, from, (pos+1) - from));
+		
+		return arr;
 	}
 	#endregion
 	
@@ -502,7 +511,7 @@ function expression(expr = "", simple = false) constructor {
 				case "[":
 					if chp == "\\" break;
 					
-					var r = new _gmre_rule_(e_gmre_rule.CHARSET, chp == "!");
+					var r = new _rule_(e_gmre_rule.CHARSET, chp == "!");
 					var closed = false;
 					var ri = i+1;
 					
@@ -539,7 +548,7 @@ function expression(expr = "", simple = false) constructor {
 					if chp == "\\" break;
 					if last_rule == undefined return _error("NO RULE TO ATTACH CUSTOM POS RULE TO: " + string(i+1), i+1);
 					
-					var r = new _gmre_rule_(e_gmre_rule.CUSTOM_POS, chp == "!");
+					var r = new _rule_(e_gmre_rule.CUSTOM_POS, chp == "!");
 					var closed = false;
 					var ri = i+1;
 					
@@ -570,7 +579,7 @@ function expression(expr = "", simple = false) constructor {
 				case "|":
 					if chp == "\\" break;
 					
-					var r = new _gmre_rule_(e_gmre_rule.STRING, chp == "!");
+					var r = new _rule_(e_gmre_rule.STRING, chp == "!");
 					var closed = false;
 					var ri = i+1;
 					
@@ -606,7 +615,7 @@ function expression(expr = "", simple = false) constructor {
 				case "(":
 					if chp == "\\" or loop != undefined break;
 					
-					loop = new _gmre_rule_(e_gmre_rule.LOOP, chp == "!");
+					loop = new _rule_(e_gmre_rule.LOOP, chp == "!");
 					loop_start = i;
 					break;
 				
@@ -699,7 +708,7 @@ function expression(expr = "", simple = false) constructor {
 	}
 	#endregion
 	
-	#region OTHER FUNC
+	#region OTHER
 	static _is_number = function(ch) {
 		var ascii = ord(ch);
 		return ascii > 47 and ascii < 58;
@@ -722,7 +731,14 @@ function expression(expr = "", simple = false) constructor {
 		return str;
 	}
 	
-	static _escape = function(str) {
+	static _make_str_arr = function(str) {
+		str_len = string_length(str);
+		str_arr = array_create(str_len);
+		for(var i = 0; i < str_len; i++)
+			str_arr[i] = string_char_at(str, i+1);
+	}
+	
+	static _hide_chars = function(str) {
 		str = string_replace_all(str, "\\\\", "ª");
 		str = string_replace_all(str, "\\(", "·¹");
 		str = string_replace_all(str, "\\[", "·²");
@@ -736,7 +752,7 @@ function expression(expr = "", simple = false) constructor {
 #endregion
 
 #region RULE
-function _gmre_rule_(t, n) constructor {
+function _rule_(t, n) constructor {
 	
 	type = t
 	negated = n;
@@ -754,7 +770,7 @@ function _gmre_rule_(t, n) constructor {
 	
 	static _process_string = function() {
 		
-		var s = _unescape(_arr2str(str));
+		var s = _unhide_chars(_arr2str(str));
 		var l = string_length(s);
 		str = array_create(l);
 		for(var i = 0; i < l; i++)
@@ -809,7 +825,7 @@ function _gmre_rule_(t, n) constructor {
 				case "[":
 					if chp == "\\" break;
 					
-					var r = new _gmre_rule_(e_gmre_rule.CHARSET, chp == "!");
+					var r = new _rule_(e_gmre_rule.CHARSET, chp == "!");
 					var closed = false;
 					var ri = i+1;
 					
@@ -840,7 +856,7 @@ function _gmre_rule_(t, n) constructor {
 				case "|":
 					if chp == "\\" break;
 					
-					var r = new _gmre_rule_(e_gmre_rule.STRING, chp == "!");
+					var r = new _rule_(e_gmre_rule.STRING, chp == "!");
 					var closed = false;
 					var ri = i+1;
 					
@@ -937,7 +953,7 @@ function _gmre_rule_(t, n) constructor {
 		return str;
 	}
 	
-	static _unescape = function(str) {
+	static _unhide_chars = function(str) {
 		str = string_replace_all(str, "\\", "");
 		str = string_replace_all(str, "ª", "\\");
 		str = string_replace_all(str, "·¹", "(");
