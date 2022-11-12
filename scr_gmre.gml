@@ -1,8 +1,8 @@
 enum e_gmre_rule { CHARSET, STRING, LOOP, CUSTOM_POS, CP_X, CP_NX, CP_CHARSET, CP_STRING }
 
 #region GMRE
-function gmre_ex_parse(ex, new_expr_string) {
-	return ex.parse(new_expr_string);
+function gmre_ex_parse(ex, new_expr_string, simple = false) {
+	return ex.parse(new_expr_string, simple);
 }
 
 function gmre_match(ex, str) {
@@ -129,7 +129,7 @@ function gmre_ex(expression = "", simple = false) constructor {
 			return pos+1;
 		}
 		
-		return "";
+		return 0;
 	}
 
 	static find_pos_all = function(str) {
