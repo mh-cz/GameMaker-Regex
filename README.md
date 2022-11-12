@@ -41,7 +41,7 @@ Editing an existing expression
 `gmre_ex_parse(ex, new_expr_string, simple*)`  
   
 You can check if the expression was parsed successfully with variable `ex.ok`  
-If `ex.ok` returns `false` you can show the error message using `ex.err` that which returns a string that will tell you what and where it went wrong  
+If `ex.ok` returns `false` you can show the error message using variable `ex.err` which returns a string that will tell you what and where it went wrong  
   
 ## Rules
 The entire system works around rules  
