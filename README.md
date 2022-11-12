@@ -120,7 +120,7 @@ var split_arr = gmre_split(ex_split_spaces, "blah blah blah");
 `split_arr = ["blah", "blah", "blah"]`  
   
 ### Search
-with wildcards  
+In simple mode with wildcards  
 Create:   
 ```
 inventory = ["pickaxe", "axe", "red potion", "blue potion"]
