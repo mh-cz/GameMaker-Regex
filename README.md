@@ -21,14 +21,16 @@ Expressions can be written in two modes: *exact* and *simple*
 `gmre_replace_all(ex, str, substr_or_array)` -> string  
 - Check if contains  
 `gmre_contains(ex, str)` -> bool  
+- Split
+`gmre_split(ex, str, substr)` -> array of strings
 
 ## How do I use it?
 `simple - bool (optional)`  
   
 Creating an expression:  
-`var ex1 = new expression(expr_string, simple*);`  
-`var ex2 = new expression(expr_string, simple*);`  
-`var ex3 = new expression(expr_string, simple*);`  
+`var ex1 = new gmre_ex(expr_string, simple*);`  
+`var ex2 = new gmre_ex(expr_string, simple*);`  
+`var ex3 = new gmre_ex(expr_string, simple*);`  
   
 Using an expression:  
 `var result1 = gmre_*(ex1, string, ...)`  
