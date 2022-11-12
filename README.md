@@ -89,7 +89,7 @@ Rules can be also used to find a position and `+` or `-` can be added to it to a
 `<rule> {[a]-1,|b|+2=[b],|c|}` Positions of `[a]`-1 **AND** `|b|`+2 must be equal to rules `[b]` **OR** `|c|`  
   
 ## Good-to-know stuff
-It's always faster to create expressions in the Create event so you don't parse rules AND process strings at the same time every step but you can always just do `var result = gmre_do_something(new gmre_ex(""), "")`
+You can simply do `var result = gmre_do_something(new gmre_ex(...), ...)` but it's always faster to create expressions in the Create event so you don't parse rules AND process strings at the same time (like every step)  
 `[a][b][c]` is the same as `|abc|`  
 A rule with min 0 repeats isn't mandatory: `[a][b]0-2[c]` matches with "abc", "abbc" and also "ac"  
 Characters used for parsing rules `[ ] { } ( ) |` inside charsets/strings require `\` before them to prevent parsing mistakes -> `[A-z0-9\[\]\{\}\|]`, `|abc\(d\)efg|`
@@ -115,9 +115,31 @@ ex_split_spaces = new gmre_ex("| |"); // or in simple syntax: new gmre_ex(" ", t
 ```
 Step or whatever:  
 ```
-var split_arr = gmre_split(ex_split_spaces, "a bd d");
+var split_arr = gmre_split(ex_split_spaces, "blah blah blah");
 ```
-`split_arr = ["a", "bc", "d"]`  
+`split_arr = ["blah", "blah", "blah"]`  
+  
+### Search
+with wildcards  
+Create:   
+```
+inventory = ["pickaxe", "axe", "red potion", "blue potion"]
+ex_inv_search = new gmre_ex();
+found_results = [];
+```
+Step or whatever:  
+```
+if keyboard_check_released(vk_anykey) {
+	gmre_ex_parse(ex_inv_search, <some_keyboard_input>, true);
+	foreach item in inventory exec {
+		var pos = gmre_find_pos(ex_inv_search, item);
+		if pos != -1 array_push(found_results, item);
+	}
+}
+```
+`found_results = ["axe"]` for `some_keyboard_input = "axe"`  
+`found_results = ["pickaxe", "axe"]` for `some_keyboard_input = "*axe"`  
+`found_results = ["red potion", "blue potion"]` for `some_keyboard_input = "*pot*"`  
   
 # Cheat sheet
 ![gmre](https://user-images.githubusercontent.com/68820052/201385231-ae57f772-6879-4771-ac45-23c4c25d38a6.png)
