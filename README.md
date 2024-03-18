@@ -1,5 +1,5 @@
 # Gamemaker Regular Expression
-My custom and pretty readable version of RegEx like string manipulator made in GM for GM 2.3+  
+My custom and pretty readable version of a RegEx like string manipulator made in GM for GM 2.3+  
 Suitable for quick searches or string validations  
   
 Expressions can be written in two modes: *exact* and *simple*  
