@@ -136,7 +136,7 @@ Step or whatever:
 if keyboard_check_released(vk_anykey) {
 	gmre_ex_parse(ex_inv_search, <some_keyboard_input>, true);
 	found_results = [];
-	foreach item in inventory exec {
+	foreach inventory into item exec {
 		var cont = gmre_contains(ex_inv_search, item);
 		if cont array_push(found_results, item);
 	}
