@@ -61,7 +61,7 @@ Spaces between rules are allowed **except** between *>rule and repeat<* and *>ne
 `[xy ]` Characters "x","y" and " " (space)  
   
 Range:  
-Only works for basic alphabet `A-Z` `a-z` and numbers `0-9`
+Only works for basic alphabet `A-Z` `a-z` and numbers `0-9`  
 `x-y` Lowercase only  
 `X-Y` Uppercase only  
 `X-y` or `x-Y` Both lowercase and uppercase are allowed (case insensitive)  
